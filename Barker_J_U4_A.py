@@ -29,7 +29,7 @@ def num_33(str):
 
 
 def num_34(str):
-    pattern = "^0$|^0[01]*?0$"
+    pattern = "^0$|^1[01]*?0$"
     print("even binary integer string:", re.match(pattern, str) != None)
 
 
@@ -39,19 +39,20 @@ def num_35(str):
 
 
 def num_36(str):
-    pattern = "\b"
+    pattern = '^.{2,4}$'
+    str = str.replace('\\n', '\n')
     print("length at least two, but at most four:", re.match(pattern, str, re.DOTALL) != None)
 
 
 def num_37(str):
-    pattern = ""
+    pattern = "^\d{3}\s*-?\s*\d\d\s*-?\s*\d{4}"
     print("valid social security number:", re.match(pattern, str) != None)
 
 
 def num_38(str):
     # When you read multiline input such as "I\nAM\nSAM."
-    # str = str.replace('\\n', '\n') # If you need this...
-    pattern = ""
+    str = str.replace('\\n', '\n') # If you need this...
+    pattern = "^\w*d\w*"
 
     # When you want to use /im options:
     d_search = re.search(pattern, str, re.I | re.MULTILINE)
@@ -59,7 +60,7 @@ def num_38(str):
 
 
 def num_39(str):
-    pattern = ""
+    pattern = "^0[01]*0$|^1[01]*1$"
     print("There's same number of 01 substrings as 10 substrings: ", re.match(pattern, str) != None)
 
 
