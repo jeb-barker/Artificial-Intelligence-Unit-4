@@ -27,10 +27,9 @@ No duplicate words in the crossword."""
 
 # Jeb Barker, 3/2/2021
 import os
-import random
 import re
 import sys
-from copy import copy, deepcopy
+from copy import deepcopy
 
 BLOCKCHAR = "#"
 OPENCHAR = "-"
@@ -57,12 +56,6 @@ def check_complete(assignment, height, width, blocks):
     return False
 
 
-def select_unassigned_var(assignment, variables):
-    for x in range(len(assignment)):
-        if assignment[x] == OPENCHAR:
-            return x
-
-
 def update_variables(value, var_index, assignment, variables):
     del variables[var_index]
     try:
@@ -79,7 +72,6 @@ def recursive_backtracking(assignment, variables, height, width, blocks):
         return assignment
     if c == -1:
         return None
-
     # var = select_unassigned_var(assignment, variables)
     # print(len(variables))
     for var in variables:
@@ -141,26 +133,34 @@ def main():
     xw += (BLOCKCHAR * 2).join([xword[p:p + width] for p in range(0, len(xword), width)])
     xw += BLOCKCHAR * (width + 3)
 
+    # display(xw, height + 2, width + 2)
+    print()
+    for x in range(len(xw)):
+        if xw[x] == PROTECTEDCHAR or xw[x] == BLOCKCHAR:
+            xw = xw[:len(xw)-x-1] + xw[x] + xw[len(xw)-x:]
+
     substituteRegex = "[{}]{}(?=[{}])".format(BLOCKCHAR, OPENCHAR, BLOCKCHAR)
     subRE2 = "[{}]{}{}(?=[{}])".format(BLOCKCHAR, OPENCHAR, OPENCHAR, BLOCKCHAR)
     subRE3 = "#[^#]{3}#"
+    subRE4 = "(?<=[#].{})-(?=.{}[#])".format("{"+str(width+1)+"}", "{"+str(width+1)+"}")
+    subRE5 = "(?<=[#].{}-.{})-(?=.{}[#])".format("{"+str(width+1)+"}", "{"+str(width+1)+"}", "{"+str(width+1)+"}")
+
     xw = re.sub(substituteRegex, BLOCKCHAR * 2, xw)
+    xw = re.sub(subRE5, BLOCKCHAR, xw)
+    xw = re.sub(subRE4, BLOCKCHAR, xw)
     xw = re.sub(subRE2, BLOCKCHAR * 3, xw)
     xw = re.sub(subRE3, BLOCKCHAR+PROTECTEDCHAR*3+BLOCKCHAR, xw)
-    # display(xw, height+2, width+2)
-    # print()
-    xw = re.sub("#\w\w-", BLOCKCHAR + PROTECTEDCHAR * 3, xw)
-    xw = re.sub("-\w\w#", PROTECTEDCHAR * 3 + BLOCKCHAR, xw)
+
+    xw = re.sub("#\w--", BLOCKCHAR + PROTECTEDCHAR * 3, xw)
+    xw = re.sub("--\w#", PROTECTEDCHAR * 3 + BLOCKCHAR, xw)
     xw = re.sub("#\w-", BLOCKCHAR + PROTECTEDCHAR*2, xw)
     xw = re.sub("-\w#", PROTECTEDCHAR*2+BLOCKCHAR, xw)
     xw = re.sub("(?<=#.{}\w.{}.{})-|-(?=>.{}.{}\w.{}#)".format("{"+str(width+1)+"}", "{"+str(width+1)+"}", "{"+str(width+2)+"}", "{"+str(width+2)+"}", "{"+str(width+1)+"}", "{"+str(width+1)+"}"), PROTECTEDCHAR, xw)
     xw = re.sub("((?<=#.{}\w.{})-)|(-(?=>.{}\w.{}#))".format("{"+str(width+1)+"}","{"+str(width+1)+"}","{"+str(width+1)+"}","{"+str(width+1)+"}"), PROTECTEDCHAR, xw)
 
-
-
     xw = re.sub("\w", PROTECTEDCHAR, xw)
     # display(xw, height+2, width+2)
-    xw = "".join([xw[p:p + width] for p in range(width+3, len(xw), width+2)]) #remove border
+    xw = "".join([xw[p:p + width] for p in range(width+3, len(xw), width+2)])  # remove border
     xw = xw[:height*width]
     # print()
     # display(xw, height, width)
@@ -171,6 +171,7 @@ def main():
     # display(xword, height, width)
     # print()
     # display(xw, height, width)
+    # print(xw)
     # print(str(height)+" x "+str(width))
 
     xw = list(xw)
@@ -188,7 +189,7 @@ def main():
         for l in word["word"]:
             final = final[:c] + l + final[c+1:]
             c += word["direction"]
-    print(final)
+    # print(final)
     display(final, height, width)
     # print("\n", final)
 
