@@ -27,6 +27,7 @@ No duplicate words in the crossword."""
 
 # Jeb Barker, 3/2/2021
 import os
+import random
 import re
 import sys
 from copy import copy, deepcopy
@@ -38,66 +39,61 @@ PROTECTEDCHAR = "~"
 
 def display(xword, height, width):
     for x in range(height):
-        b = xword[x*height: x*height+width]
+        b = xword[x*width: x*width+width]
         print(b)
 
 
-def initial_variables(puzzle, csp_table, neighbors):
-    out = {}
-    for x in range(0, height * width):
-        out[x] = {y for y in range(1, 10)} if puzzle[x] == "." else {int(puzzle[x])}
-    for var in out:
-        for val in out[var]:
-            if len(out[var]) == 1:
-                update_variables(val, var, puzzle, out, csp_table, neighbors)
-    return out
+def check_complete(assignment, height, width, blocks):
+    xword = "".join(assignment)
+    xw = BLOCKCHAR * (width + 3)
+    xw += (BLOCKCHAR * 2).join([xword[p:p + width] for p in range(0, len(xword), width)])
+    xw += BLOCKCHAR * (width + 3)
+    illegalRegex = "([#](.?[~-]|[~-].?)[#])|([#].{}((.{})?[~-].{}|[~-].{}(.{})?)[#])".format("{" + str(width+1) + "}", "{" + str(width+2) + "}", "{" + str(width+1) + "}", "{" + str(width+1) + "}", "{" + str(width+2) + "}")
 
-
-def check_complete(assignment):
+    if re.search(illegalRegex, xw):
+        return -1
+    if len(re.findall("#", xword)) == blocks:
+        return True
     return False
 
 
-def ordered_domain(assignment, variables, freq):
-    return sorted(variables, key=lambda a: 9 - freq[a], reverse=False)
-
-
 def select_unassigned_var(assignment, variables):
-    smol = None
-    for x in range(81):
-        if assignment[x] == '.':
-            try:
-                if len(variables[x]) < len(variables[smol]):
-                    smol = x
-            except KeyError:
-                smol = x
-    return smol
-    # return assignment.index(min([(a, b) for a, b in enumerate(assignment)], key=lambda val: len(variables[val[0]]) if val[1] != "." else 10)[1])
+    for x in range(len(assignment)):
+        if assignment[x] == OPENCHAR:
+            return x
 
 
-def update_variables(value, var_index, assignment, variables, csp_table, neighbors):
-    for var in neighbors[var_index]:
-        if value in variables[var]:
-            # variables[var] = {a for a in variables[var] if a != value}
-            c = variables[var].copy()
-            c.remove(value)
-            variables[var] = c
+def update_variables(value, var_index, assignment, variables):
+    del variables[var_index]
+    try:
+        del variables[len(assignment) - 1 - var_index]
+    except KeyError:
+        pass
     return variables
 
 
-def recursive_backtracking(assignment, variables, csp_table_temp, neighbors):
-    if check_complete(assignment):
+def recursive_backtracking(assignment, variables, height, width, blocks):
+    c = check_complete(assignment, height, width, blocks)
+    if c == True:
         assignment = "".join(assignment)
         return assignment
-    var = select_unassigned_var(assignment, variables)
-    for value in variables[var]:
-        assignment[var] = str(value)
-        variablesbutcooler = variables.copy()  # {a: b for a, b in variables.items()} # variables.deepcopy()
-        variablesbutcooler = update_variables(value, var, assignment, variablesbutcooler, csp_table_temp, neighbors)
-        result = recursive_backtracking(assignment, variablesbutcooler, csp_table_temp, neighbors)
+    if c == -1:
+        return None
+
+    # var = select_unassigned_var(assignment, variables)
+    # print(len(variables))
+    for var in variables:
+        assignment[var] = BLOCKCHAR
+        assignment[len(assignment) - 1 - var] = BLOCKCHAR
+        variablesbutcooler = {a: b for a, b in variables.items()} # variables.deepcopy()
+        variablesbutcooler = update_variables(BLOCKCHAR, var, assignment, variablesbutcooler)
+        result = recursive_backtracking(assignment, variablesbutcooler, height, width, blocks)
         if result:
             return result
         else:
-            assignment[var] = "."
+            assignment[var] = OPENCHAR
+            assignment[len(assignment) - 1 - var] = OPENCHAR
+            # print("back")
     return None
 
 
@@ -110,11 +106,11 @@ def main():
                 match = re.search(intTest[0], arg, re.I)
                 height = int(match.group(1))
                 width = int(match.group(2))
-                print(1)
+                # print(1)
             elif re.search(intTest[1], arg, re.I):
                 match = re.search(intTest[1], arg, re.I)
                 blocks = int(match.group(0))
-                print(2)
+                # print(2)
             elif re.search(intTest[2], arg, re.I):
                 match = re.search(intTest[2], arg, re.I)
                 w = {}
@@ -122,7 +118,7 @@ def main():
                 w["direction"] = 1 if match.group(1).upper() == "H" else width
                 w["coord"] = (width * int(match.group(2))) + int(match.group(3))
                 words.append(w)
-                print(3)
+                # (3)
 
     xword = ""
     for x in range(height * width):
@@ -137,24 +133,64 @@ def main():
 
     print(blocks)
     if blocks % 2 != 0 and height*width % 2 != 0:
-        xword = xword[:(height*width)//2] + PROTECTEDCHAR + xword[(height*width)//2 + 1:]
-        print((height*width)//2)
-
+        xword = xword[:(height*width)//2] + BLOCKCHAR + xword[(height*width)//2 + 1:]
+        # print((height*width)//2)
+    elif blocks % 2 == 0 and height*width % 2 != 0:
+        xword = xword[:(height * width) // 2] + PROTECTEDCHAR + xword[(height * width) // 2 + 1:]
     xw = BLOCKCHAR * (width + 3)
     xw += (BLOCKCHAR * 2).join([xword[p:p + width] for p in range(0, len(xword), width)])
     xw += BLOCKCHAR * (width + 3)
 
+    substituteRegex = "[{}]{}(?=[{}])".format(BLOCKCHAR, OPENCHAR, BLOCKCHAR)
+    subRE2 = "[{}]{}{}(?=[{}])".format(BLOCKCHAR, OPENCHAR, OPENCHAR, BLOCKCHAR)
+    subRE3 = "#[^#]{3}#"
+    xw = re.sub(substituteRegex, BLOCKCHAR * 2, xw)
+    xw = re.sub(subRE2, BLOCKCHAR * 3, xw)
+    xw = re.sub(subRE3, BLOCKCHAR+PROTECTEDCHAR*3+BLOCKCHAR, xw)
+    # display(xw, height+2, width+2)
+    # print()
     xw = re.sub("#\w\w-", BLOCKCHAR + PROTECTEDCHAR * 3, xw)
+    xw = re.sub("-\w\w#", PROTECTEDCHAR * 3 + BLOCKCHAR, xw)
     xw = re.sub("#\w-", BLOCKCHAR + PROTECTEDCHAR*2, xw)
-    xw = re.sub("(?<=#.{8}\w.{8}.{9})-|-(?=>.{9}.{8}\w.{8}#)", PROTECTEDCHAR, xw)
-    xw = re.sub("((?<=#.{8}\w.{8})-)|(-(?=>.{8}\w.{8}#))", PROTECTEDCHAR, xw)
+    xw = re.sub("-\w#", PROTECTEDCHAR*2+BLOCKCHAR, xw)
+    xw = re.sub("(?<=#.{}\w.{}.{})-|-(?=>.{}.{}\w.{}#)".format("{"+str(width+1)+"}", "{"+str(width+1)+"}", "{"+str(width+2)+"}", "{"+str(width+2)+"}", "{"+str(width+1)+"}", "{"+str(width+1)+"}"), PROTECTEDCHAR, xw)
+    xw = re.sub("((?<=#.{}\w.{})-)|(-(?=>.{}\w.{}#))".format("{"+str(width+1)+"}","{"+str(width+1)+"}","{"+str(width+1)+"}","{"+str(width+1)+"}"), PROTECTEDCHAR, xw)
+
+
 
     xw = re.sub("\w", PROTECTEDCHAR, xw)
+    # display(xw, height+2, width+2)
+    xw = "".join([xw[p:p + width] for p in range(width+3, len(xw), width+2)]) #remove border
+    xw = xw[:height*width]
+    # print()
+    # display(xw, height, width)
+    for x in range(len(xw)):
+        if xw[x] == PROTECTEDCHAR or xw[x] == BLOCKCHAR:
+            xw = xw[:len(xw)-x-1] + xw[x] + xw[len(xw)-x:]
 
-    xw = "".join([xw[p:p + width] for p in range(10, len(xw), width+2)]) #remove border
-    display(xword, height, width)
-    print()
-    display(xw, height, width)
-    print(str(height)+" x "+str(width))
+    # display(xword, height, width)
+    # print()
+    # display(xw, height, width)
+    # print(str(height)+" x "+str(width))
+
+    xw = list(xw)
+    variables = {}
+    for x in range(len(xw)):
+        if xw[x] == OPENCHAR:
+            variables[x] = BLOCKCHAR
+    if blocks == height * width:
+        final = BLOCKCHAR * (height * width)
+    else:
+        final = recursive_backtracking(xw, variables, height, width, blocks)
+        final = re.sub(PROTECTEDCHAR, OPENCHAR, final)
+    for word in words:
+        c = word["coord"]
+        for l in word["word"]:
+            final = final[:c] + l + final[c+1:]
+            c += word["direction"]
+    print(final)
+    display(final, height, width)
+    # print("\n", final)
+
 
 if __name__ == '__main__': main()
