@@ -42,12 +42,13 @@ def display(xword, height, width):
         print(b)
 
 
-def check_complete(assignment, height, width, blocks):
+def check_complete(assignment, height, width, blocks, FAILED):
+
     xword = "".join(assignment)
     xw = BLOCKCHAR * (width + 3)
     xw += (BLOCKCHAR * 2).join([xword[p:p + width] for p in range(0, len(xword), width)])
     xw += BLOCKCHAR * (width + 3)
-    illegalRegex = "([#](.?[~-]|[~-].?)[#])|([#].{}((.{})?[~-].{}|[~-].{}(.{})?)[#])".format("{" + str(width+1) + "}", "{" + str(width+2) + "}", "{" + str(width+1) + "}", "{" + str(width+1) + "}", "{" + str(width+2) + "}")
+    illegalRegex = "([#](.?[-~]|[-~].?)[#])|([#].{}((.{})?[-~].{}|[-~].{}(.{})?)[#])".format("{" + str(width+1) + "}", "{" + str(width+2) + "}", "{" + str(width+1) + "}", "{" + str(width+1) + "}", "{" + str(width+2) + "}")
 
     if re.search(illegalRegex, xw):
         return -1
@@ -65,8 +66,8 @@ def update_variables(value, var_index, assignment, variables):
     return variables
 
 
-def recursive_backtracking(assignment, variables, height, width, blocks):
-    c = check_complete(assignment, height, width, blocks)
+def recursive_backtracking(assignment, variables, height, width, blocks, FAILED):
+    c = check_complete(assignment, height, width, blocks, FAILED)
     if c == True:
         assignment = "".join(assignment)
         return assignment
@@ -79,7 +80,7 @@ def recursive_backtracking(assignment, variables, height, width, blocks):
         assignment[len(assignment) - 1 - var] = BLOCKCHAR
         variablesbutcooler = {a: b for a, b in variables.items()} # variables.deepcopy()
         variablesbutcooler = update_variables(BLOCKCHAR, var, assignment, variablesbutcooler)
-        result = recursive_backtracking(assignment, variablesbutcooler, height, width, blocks)
+        result = recursive_backtracking(assignment, variablesbutcooler, height, width, blocks, FAILED)
         if result:
             return result
         else:
@@ -173,17 +174,37 @@ def main():
     # display(xw, height, width)
     # print(xw)
     # print(str(height)+" x "+str(width))
-
+    FAILED = []
     xw = list(xw)
+    bw = BLOCKCHAR * (width + 3)
+    bw += (BLOCKCHAR * 2).join(["".join(xw)[p:p + width] for p in range(0, len(xw), width)])
+    bw += BLOCKCHAR * (width + 3)
+    final = ""
     variables = {}
+    try:
+        arr = area_fill("" + bw, [x for x in range(len(bw)) if bw[x] == OPENCHAR][0], width+2, "?")
+    except IndexError:
+        arr = []
     for x in range(len(xw)):
         if xw[x] == OPENCHAR:
             variables[x] = BLOCKCHAR
     if blocks == height * width:
         final = BLOCKCHAR * (height * width)
+    elif OPENCHAR in arr or PROTECTEDCHAR in arr:
+        for x in range(len(bw)):
+            if bw[x] == OPENCHAR or bw[x] == PROTECTEDCHAR:
+
+                b = area_fill("" + bw, x, width+2, "#")
+                b = area_fill(b, len(b)-x, width+2, "#")
+                b = "".join([b[p:p + width] for p in range(width + 3, len(b), width + 2)])  # remove border
+                b = b[:height * width]
+                if len(re.findall("#", b)) == blocks:
+                    final = b
+                    final = re.sub(PROTECTEDCHAR, OPENCHAR, final)
+                    break
     else:
-        final = recursive_backtracking(xw, variables, height, width, blocks)
-        final = re.sub(PROTECTEDCHAR, OPENCHAR, final)
+        out = recursive_backtracking(xw, variables, height, width, blocks, FAILED)
+        final = re.sub(PROTECTEDCHAR, OPENCHAR, out)
     for word in words:
         c = word["coord"]
         for l in word["word"]:
@@ -192,6 +213,19 @@ def main():
     # print(final)
     display(final, height, width)
     # print("\n", final)
+
+
+def area_fill(board, sp, width, replChar):
+    dirs = [-1, width, 1, -1 * width]
+    if sp < 0 or sp >= len(board):
+        return board
+    if board[sp] in {OPENCHAR, PROTECTEDCHAR}:
+        board = board[0:sp] + replChar + board[sp + 1:]
+        for d in dirs:
+            if d == -1 and sp % width == 0: continue  # left edge
+            if d == 1 and sp + 1 % width == 0: continue  # right edge
+            board = area_fill(board, sp + d, width, replChar)
+    return board
 
 
 if __name__ == '__main__': main()
