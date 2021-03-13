@@ -18,6 +18,7 @@ distinct words are lower cased in the output shown to the user.  Because of the 
 only show output that is better than any prior output."""
 # Jeb Barker, 3/4/2021
 import os
+import random
 import re
 import sys
 from copy import deepcopy
@@ -98,7 +99,7 @@ def main():
             elif re.search(intTest[2], arg, re.I):
                 match = re.search(intTest[2], arg, re.I)
                 w = {}
-                w["word"] = match.group(4).upper()
+                w["word"] = match.group(4).upper() if match.group(4).upper() != "" else BLOCKCHAR
                 w["direction"] = 1 if match.group(1).upper() == "H" else width
                 w["coord"] = (width * int(match.group(2))) + int(match.group(3))
                 words.append(w)
@@ -205,7 +206,64 @@ def main():
             c += word["direction"]
     # print(final)
     display(final, height, width)
+    dictionary = {x: set() for x in range(50)}
+    with open(dictionaryFile) as file:
+        for line in file.readlines():
+            dictionary[len(line.strip().upper())].add(line.strip().upper())
+    # print(dictionary)
     # print("\n", final)
+    startPos = start_pos(width, height, final, dictionary)
+    # print(startPos)
+    # xw = transpose(final, height)
+    # print(xw)
+    display(word_backtracking(list(final), startPos, height, width, dictionary), height, width)
+
+
+def select_unassigned_var(assignment, variables):
+    return random.randrange(len(variables))
+
+
+def check_words(assignment, variables, dictionary):
+    if OPENCHAR in assignment:
+        return False
+    # else:
+    #     # print("found a full board")
+    #     pass
+    # for var in variables:
+    #     if var[3] not in dictionary[len(var[3])]:
+    #         return False
+    return True
+
+
+def word_backtracking(assignment, variables, height, width, dictionary):
+    c = check_words(assignment, variables, dictionary)
+    if c == True:
+        assignment = "".join(assignment)
+        return assignment
+    vary = select_unassigned_var(assignment, variables)
+    # print(len(variables))
+    for var in variables[vary][4]:
+        dictionary[len(var)].remove(var)
+        count = 0
+        bad = False
+        for index in variables[vary][1]:
+            if assignment[index] != var[count] and assignment[index] != OPENCHAR:
+                bad = True
+            assignment[index] = var[count]
+            count += 1
+        if bad:
+            return None
+        variablesbutcooler = start_pos(width, height, "".join(assignment), dictionary)
+        result = word_backtracking(assignment, variablesbutcooler, height, width, dictionary)
+        if result:
+            return result
+        else:
+            count = 0
+            for index in variables[vary][1]:
+                assignment[index] = variables[vary][3][count]
+                count += 1
+            dictionary[len(var)].add(var)
+    return None
 
 
 def area_fill(board, sp, width, replChar):
@@ -219,6 +277,46 @@ def area_fill(board, sp, width, replChar):
             if d == 1 and sp + 1 % width == 0: continue  # right edge
             board = area_fill(board, sp + d, width, replChar)
     return board
+
+
+def transpose(xw, newWidth):
+    return "".join([xw[col::newWidth] for col in range(newWidth)])
+
+
+def start_pos(width, height, board, all_words):
+    xw = BLOCKCHAR*(width+3)
+    xw += (BLOCKCHAR*2).join([board[p:p+width] for p in range(0, len(board), width)])
+    xw += BLOCKCHAR*(width+3)
+    pattern = r'[{}]({}|\w)*(?=[{}])'.format(BLOCKCHAR, OPENCHAR, BLOCKCHAR)
+    regex = re.compile(pattern)
+    width_turn = [width+2, height+2]
+    pos_word_list = []
+    for turn in range(2):
+        for m in regex.finditer(xw):
+            pos = 0
+            pos_list = []
+            word = xw[m.start()+1:m.end()]
+            regex2 = re.compile('\\b' + word.replace(OPENCHAR, '\\w') + '\\b')
+            if len(word)>0 and word.count(OPENCHAR) == 0 and turn == 0:
+                pos_word_list.append([0, pos_list, 'H', word, []])
+
+            elif len(word)>0 and word.count(OPENCHAR) == 0 and turn == 1:
+                pos_word_list.append([0, pos_list, 'V', word, []])
+
+            elif len(word)>0 and turn==0:
+                candidates = {a for a in all_words[len(word)] if regex2.match(a) is not None}
+                pos = ((m.start()+1)//(width+2)-1)*width + (m.start()+1) % (width+2) -1
+                pos_list = [p for p in range(pos, pos+len(word))]
+                pos_word_list.append([len(candidates), pos_list, 'H', word, candidates])
+            elif len(word)>0 and turn == 1:
+                candidates = {a for a in all_words[len(word)] if regex2.match(a) is not None}
+                pos = (((m.start()+1) % (height+2))-1)*width + (m.start()+1)//(height+2)-1
+                pos_list = [pos + p*width for p in range(len(word))]
+                pos_word_list.append([len(candidates), pos_list, 'V', word, candidates])
+        xw = transpose(xw, width_turn[turn])
+    for item in pos_word_list:
+        num_of_o = item[3].count(OPENCHAR)
+    return pos_word_list
 
 
 if __name__ == '__main__': main()
