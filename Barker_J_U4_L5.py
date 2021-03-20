@@ -206,21 +206,43 @@ def main():
             c += word["direction"]
     # print(final)
     display(final, height, width)
-    dictionary = {x: set() for x in range(50)}
+    dictionary = {x: [] for x in range(50)}
+    frequencyDict = {}
     with open(dictionaryFile) as file:
         for line in file.readlines():
-            dictionary[len(line.strip().upper())].add(line.strip().upper())
+            dictionary[len(line.strip().upper())].append(line.strip().upper())
+            for index, char in enumerate(line.strip().upper()):
+                wordTuple = (index, char, len(line.strip().upper()))
+                if wordTuple not in frequencyDict:
+                    frequencyDict[wordTuple] = 1
+                else:
+                    frequencyDict[wordTuple] += 1
     # print(dictionary)
     # print("\n", final)
     startPos = start_pos(width, height, final, dictionary)
     # print(startPos)
     # xw = transpose(final, height)
     # print(xw)
-    display(word_backtracking(list(final), startPos, height, width, dictionary), height, width)
+    display(word_backtracking(list(final), startPos, height, width, dictionary, frequencyDict), height, width)
 
 
 def select_unassigned_var(assignment, variables):
-    return random.randrange(len(variables))
+    smol = None
+    for x in range(len(variables)):
+        if "-" in variables[x][3]:
+            try:
+                if variables[x][0] < variables[smol][0]:
+                    smol = x
+            except TypeError:
+                smol = x
+    return smol
+
+
+def heuristic(frequencyDict, word):
+    total = 0
+    for index, char in enumerate(word):
+        total += frequencyDict[(index, char, len(word))]
+    return total
 
 
 def check_words(assignment, variables, dictionary):
@@ -235,13 +257,16 @@ def check_words(assignment, variables, dictionary):
     return True
 
 
-def word_backtracking(assignment, variables, height, width, dictionary):
+def word_backtracking(assignment, variables, height, width, dictionary, frequencyDict):
     c = check_words(assignment, variables, dictionary)
     if c == True:
         assignment = "".join(assignment)
         return assignment
     vary = select_unassigned_var(assignment, variables)
     # print(len(variables))
+    if vary is None:
+        return None
+    pw = variables[vary][4].sort(key=lambda word: heuristic(frequencyDict, word), reverse=True)
     for var in variables[vary][4]:
         dictionary[len(var)].remove(var)
         count = 0
@@ -254,7 +279,7 @@ def word_backtracking(assignment, variables, height, width, dictionary):
         if bad:
             return None
         variablesbutcooler = start_pos(width, height, "".join(assignment), dictionary)
-        result = word_backtracking(assignment, variablesbutcooler, height, width, dictionary)
+        result = word_backtracking(assignment, variablesbutcooler, height, width, dictionary, frequencyDict)
         if result:
             return result
         else:
@@ -262,7 +287,7 @@ def word_backtracking(assignment, variables, height, width, dictionary):
             for index in variables[vary][1]:
                 assignment[index] = variables[vary][3][count]
                 count += 1
-            dictionary[len(var)].add(var)
+            dictionary[len(var)].append(var)
     return None
 
 
@@ -304,18 +329,19 @@ def start_pos(width, height, board, all_words):
                 pos_word_list.append([0, pos_list, 'V', word, []])
 
             elif len(word)>0 and turn==0:
-                candidates = {a for a in all_words[len(word)] if regex2.match(a) is not None}
+                candidates = [a for a in all_words[len(word)] if regex2.match(a) is not None]
                 pos = ((m.start()+1)//(width+2)-1)*width + (m.start()+1) % (width+2) -1
                 pos_list = [p for p in range(pos, pos+len(word))]
                 pos_word_list.append([len(candidates), pos_list, 'H', word, candidates])
             elif len(word)>0 and turn == 1:
-                candidates = {a for a in all_words[len(word)] if regex2.match(a) is not None}
-                pos = (((m.start()+1) % (height+2))-1)*width + (m.start()+1)//(height+2)-1
-                pos_list = [pos + p*width for p in range(len(word))]
-                pos_word_list.append([len(candidates), pos_list, 'V', word, candidates])
+                if len(board) < 100:
+                    candidates = [a for a in all_words[len(word)] if regex2.match(a) is not None]
+                    pos = (((m.start()+1) % (height+2))-1)*width + (m.start()+1)//(height+2)-1
+                    pos_list = [pos + p*width for p in range(len(word))]
+                    pos_word_list.append([len(candidates), pos_list, 'V', word, candidates])
         xw = transpose(xw, width_turn[turn])
-    for item in pos_word_list:
-        num_of_o = item[3].count(OPENCHAR)
+    # for item in pos_word_list:
+    #     num_of_o = item[3].count(OPENCHAR)
     return pos_word_list
 
 
