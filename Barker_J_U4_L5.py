@@ -31,17 +31,20 @@ PROTECTEDCHAR = "~"
 
 def display(xword, height, width):
     for x in range(height):
-        b = xword[x*width: x*width+width]
+        b = xword[x * width: x * width + width]
         print(b)
 
 
 def check_complete(assignment, height, width, blocks, FAILED):
-
     xword = "".join(assignment)
     xw = BLOCKCHAR * (width + 3)
     xw += (BLOCKCHAR * 2).join([xword[p:p + width] for p in range(0, len(xword), width)])
     xw += BLOCKCHAR * (width + 3)
-    illegalRegex = "([#](.?[-~]|[-~].?)[#])|([#].{}((.{})?[-~].{}|[-~].{}(.{})?)[#])".format("{" + str(width+1) + "}", "{" + str(width+2) + "}", "{" + str(width+1) + "}", "{" + str(width+1) + "}", "{" + str(width+2) + "}")
+    illegalRegex = "([#](.?[-~]|[-~].?)[#])|([#].{}((.{})?[-~].{}|[-~].{}(.{})?)[#])".format("{" + str(width + 1) + "}",
+                                                                                             "{" + str(width + 2) + "}",
+                                                                                             "{" + str(width + 1) + "}",
+                                                                                             "{" + str(width + 1) + "}",
+                                                                                             "{" + str(width + 2) + "}")
 
     if re.search(illegalRegex, xw):
         return -1
@@ -71,7 +74,7 @@ def recursive_backtracking(assignment, variables, height, width, blocks, FAILED)
     for var in variables:
         assignment[var] = BLOCKCHAR
         assignment[len(assignment) - 1 - var] = BLOCKCHAR
-        variablesbutcooler = {a: b for a, b in variables.items()} # variables.deepcopy()
+        variablesbutcooler = {a: b for a, b in variables.items()}  # variables.deepcopy()
         variablesbutcooler = update_variables(BLOCKCHAR, var, assignment, variablesbutcooler)
         result = recursive_backtracking(assignment, variablesbutcooler, height, width, blocks, FAILED)
         if result:
@@ -115,15 +118,15 @@ def main():
     for word in words:
         c = word["coord"]
         for l in word["word"]:
-            xword = xword[:c] + l + xword[c+1:]
-            xw = xw[:c] + PROTECTEDCHAR + xw[c+1:]
+            xword = xword[:c] + l + xword[c + 1:]
+            xw = xw[:c] + PROTECTEDCHAR + xw[c + 1:]
             c += word["direction"]
 
     print(blocks)
-    if blocks % 2 != 0 and height*width % 2 != 0:
-        xword = xword[:(height*width)//2] + BLOCKCHAR + xword[(height*width)//2 + 1:]
+    if blocks % 2 != 0 and height * width % 2 != 0:
+        xword = xword[:(height * width) // 2] + BLOCKCHAR + xword[(height * width) // 2 + 1:]
         # print((height*width)//2)
-    elif blocks % 2 == 0 and height*width % 2 != 0:
+    elif blocks % 2 == 0 and height * width % 2 != 0:
         xword = xword[:(height * width) // 2] + PROTECTEDCHAR + xword[(height * width) // 2 + 1:]
     xw = BLOCKCHAR * (width + 3)
     xw += (BLOCKCHAR * 2).join([xword[p:p + width] for p in range(0, len(xword), width)])
@@ -133,36 +136,42 @@ def main():
     print()
     for x in range(len(xw)):
         if xw[x] == PROTECTEDCHAR or xw[x] == BLOCKCHAR:
-            xw = xw[:len(xw)-x-1] + xw[x] + xw[len(xw)-x:]
+            xw = xw[:len(xw) - x - 1] + xw[x] + xw[len(xw) - x:]
 
     substituteRegex = "[{}]{}(?=[{}])".format(BLOCKCHAR, OPENCHAR, BLOCKCHAR)
     subRE2 = "[{}]{}{}(?=[{}])".format(BLOCKCHAR, OPENCHAR, OPENCHAR, BLOCKCHAR)
     subRE3 = "#[^#]{3}#"
-    subRE4 = "(?<=[#].{})-(?=.{}[#])".format("{"+str(width+1)+"}", "{"+str(width+1)+"}")
-    subRE5 = "(?<=[#].{}-.{})-(?=.{}[#])".format("{"+str(width+1)+"}", "{"+str(width+1)+"}", "{"+str(width+1)+"}")
+    subRE4 = "(?<=[#].{})-(?=.{}[#])".format("{" + str(width + 1) + "}", "{" + str(width + 1) + "}")
+    subRE5 = "(?<=[#].{}-.{})-(?=.{}[#])".format("{" + str(width + 1) + "}", "{" + str(width + 1) + "}",
+                                                 "{" + str(width + 1) + "}")
 
     xw = re.sub(substituteRegex, BLOCKCHAR * 2, xw)
     xw = re.sub(subRE5, BLOCKCHAR, xw)
     xw = re.sub(subRE4, BLOCKCHAR, xw)
     xw = re.sub(subRE2, BLOCKCHAR * 3, xw)
-    xw = re.sub(subRE3, BLOCKCHAR+PROTECTEDCHAR*3+BLOCKCHAR, xw)
+    xw = re.sub(subRE3, BLOCKCHAR + PROTECTEDCHAR * 3 + BLOCKCHAR, xw)
 
     xw = re.sub("#\w--", BLOCKCHAR + PROTECTEDCHAR * 3, xw)
     xw = re.sub("--\w#", PROTECTEDCHAR * 3 + BLOCKCHAR, xw)
-    xw = re.sub("#\w-", BLOCKCHAR + PROTECTEDCHAR*2, xw)
-    xw = re.sub("-\w#", PROTECTEDCHAR*2+BLOCKCHAR, xw)
-    xw = re.sub("(?<=#.{}\w.{}.{})-|-(?=>.{}.{}\w.{}#)".format("{"+str(width+1)+"}", "{"+str(width+1)+"}", "{"+str(width+2)+"}", "{"+str(width+2)+"}", "{"+str(width+1)+"}", "{"+str(width+1)+"}"), PROTECTEDCHAR, xw)
-    xw = re.sub("((?<=#.{}\w.{})-)|(-(?=>.{}\w.{}#))".format("{"+str(width+1)+"}","{"+str(width+1)+"}","{"+str(width+1)+"}","{"+str(width+1)+"}"), PROTECTEDCHAR, xw)
+    xw = re.sub("#\w-", BLOCKCHAR + PROTECTEDCHAR * 2, xw)
+    xw = re.sub("-\w#", PROTECTEDCHAR * 2 + BLOCKCHAR, xw)
+    xw = re.sub("(?<=#.{}\w.{}.{})-|-(?=>.{}.{}\w.{}#)".format("{" + str(width + 1) + "}", "{" + str(width + 1) + "}",
+                                                               "{" + str(width + 2) + "}", "{" + str(width + 2) + "}",
+                                                               "{" + str(width + 1) + "}", "{" + str(width + 1) + "}"),
+                PROTECTEDCHAR, xw)
+    xw = re.sub("((?<=#.{}\w.{})-)|(-(?=>.{}\w.{}#))".format("{" + str(width + 1) + "}", "{" + str(width + 1) + "}",
+                                                             "{" + str(width + 1) + "}", "{" + str(width + 1) + "}"),
+                PROTECTEDCHAR, xw)
 
     xw = re.sub("\w", PROTECTEDCHAR, xw)
     # display(xw, height+2, width+2)
-    xw = "".join([xw[p:p + width] for p in range(width+3, len(xw), width+2)])  # remove border
-    xw = xw[:height*width]
+    xw = "".join([xw[p:p + width] for p in range(width + 3, len(xw), width + 2)])  # remove border
+    xw = xw[:height * width]
     # print()
     # display(xw, height, width)
     for x in range(len(xw)):
         if xw[x] == PROTECTEDCHAR or xw[x] == BLOCKCHAR:
-            xw = xw[:len(xw)-x-1] + xw[x] + xw[len(xw)-x:]
+            xw = xw[:len(xw) - x - 1] + xw[x] + xw[len(xw) - x:]
 
     # display(xword, height, width)
     # print()
@@ -177,7 +186,7 @@ def main():
     final = ""
     variables = {}
     try:
-        arr = area_fill("" + bw, [x for x in range(len(bw)) if bw[x] == OPENCHAR][0], width+2, "?")
+        arr = area_fill("" + bw, [x for x in range(len(bw)) if bw[x] == OPENCHAR][0], width + 2, "?")
     except IndexError:
         arr = []
     for x in range(len(xw)):
@@ -189,8 +198,8 @@ def main():
         for x in range(len(bw)):
             if bw[x] == OPENCHAR or bw[x] == PROTECTEDCHAR:
 
-                b = area_fill("" + bw, x, width+2, "#")
-                b = area_fill(b, len(b)-x, width+2, "#")
+                b = area_fill("" + bw, x, width + 2, "#")
+                b = area_fill(b, len(b) - x, width + 2, "#")
                 b = "".join([b[p:p + width] for p in range(width + 3, len(b), width + 2)])  # remove border
                 b = b[:height * width]
                 if len(re.findall("#", b)) == blocks:
@@ -203,7 +212,7 @@ def main():
     for word in words:
         c = word["coord"]
         for l in word["word"]:
-            final = final[:c] + l + final[c+1:]
+            final = final[:c] + l + final[c + 1:]
             c += word["direction"]
     # print(final)
     display(final, height, width)
@@ -227,8 +236,9 @@ def main():
     # xw = transpose(final, height)
     # print(xw)
     now = time.time()
-    display(word_backtracking(list(final), startPos, height, width, dictionary, frequencyDict, 0, deepcopy(dictionary), regex), height, width)
-    print(time.time()-now)
+    display(word_backtracking(list(final), startPos, height, width, dictionary, frequencyDict, 0, deepcopy(dictionary),
+                              regex), height, width)
+    print(time.time() - now)
 
 
 def select_unassigned_var(assignment, variables):
@@ -290,7 +300,8 @@ def word_backtracking(assignment, variables, height, width, dictionary, frequenc
         variablesbutcooler = start_pos(width, height, "".join(assignment), dictionary, regex)
         # display("".join(assignment), height, width)
         # print()
-        result = word_backtracking(assignment, variablesbutcooler, height, width, dictionary, frequencyDict, level+1, dictionaryFull, regex)
+        result = word_backtracking(assignment, variablesbutcooler, height, width, dictionary, frequencyDict, level + 1,
+                                   dictionaryFull, regex)
         if result:
             return result
         else:
@@ -309,8 +320,10 @@ def area_fill(board, sp, width, replChar):
     if board[sp] in {OPENCHAR, PROTECTEDCHAR}:
         board = board[0:sp] + replChar + board[sp + 1:]
         for d in dirs:
-            if d == -1 and sp % width == 0: continue  # left edge
-            if d == 1 and sp + 1 % width == 0: continue  # right edge
+            if d == -1 and sp % width == 0:
+                continue  # left edge
+            if d == 1 and sp + 1 % width == 0:
+                continue  # right edge
             board = area_fill(board, sp + d, width, replChar)
     return board
 
@@ -320,37 +333,36 @@ def transpose(xw, newWidth):
 
 
 def start_pos(width, height, board, all_words, regex):
-    xw = BLOCKCHAR*(width+3)
-    xw += (BLOCKCHAR*2).join([board[p:p+width] for p in range(0, len(board), width)])
-    xw += BLOCKCHAR*(width+3)
+    xw = BLOCKCHAR * (width + 3)
+    xw += (BLOCKCHAR * 2).join([board[p:p + width] for p in range(0, len(board), width)])
+    xw += BLOCKCHAR * (width + 3)
 
-    width_turn = [width+2, height+2]
+    width_turn = [width + 2, height + 2]
     pos_word_list = []
     for turn in range(2):
         for m in regex.finditer(xw):
-            pos = 0
             pos_list = []
-            word = xw[m.start()+1:m.end()]
+            word = xw[m.start() + 1:m.end()]
             regex2 = re.compile('\\b' + word.replace(OPENCHAR, '\\w') + '\\b')
-            if len(word)>0 and OPENCHAR not in word and turn == 0:
+            if len(word) > 0 and OPENCHAR not in word and turn == 0:
                 pos_word_list.append([0, pos_list, 'H', word, []])
 
-            elif len(word)>0 and OPENCHAR not in word and turn == 1:
+            elif len(word) > 0 and OPENCHAR not in word and turn == 1:
                 pos_word_list.append([0, pos_list, 'V', word, []])
 
-            elif len(word)>0 and turn==0:
+            elif len(word) > 0 and turn == 0:
 
                 candidates = [a for a in all_words[len(word)] if regex2.match(a) is not None]
                 # candidates = [a for a in all_words[len(word)] if len([x for x in range(len(word)) if (word[x]==OPENCHAR or word[x]==a[x])])==len(word)]
-                pos = ((m.start()+1)//(width+2)-1)*width + (m.start()+1) % (width+2) -1
-                pos_list = [p for p in range(pos, pos+len(word))]
+                pos = ((m.start() + 1) // (width + 2) - 1) * width + (m.start() + 1) % (width + 2) - 1
+                pos_list = [p for p in range(pos, pos + len(word))]
                 pos_word_list.append([len(candidates), pos_list, 'H', word, candidates])
-            elif len(word)>0 and turn == 1:
+            elif len(word) > 0 and turn == 1:
                 if len(board) < 150:
                     candidates = [a for a in all_words[len(word)] if regex2.match(a) is not None]
                     # candidates = [a for a in all_words[len(word)] if len([x for x in range(len(word)) if (word[x]==OPENCHAR or word[x]==a[x])])==len(word)]
-                    pos = (((m.start()+1) % (height+2))-1)*width + (m.start()+1)//(height+2)-1
-                    pos_list = [pos + p*width for p in range(len(word))]
+                    pos = (((m.start() + 1) % (height + 2)) - 1) * width + (m.start() + 1) // (height + 2) - 1
+                    pos_list = [pos + p * width for p in range(len(word))]
                     pos_word_list.append([len(candidates), pos_list, 'V', word, candidates])
         xw = transpose(xw, width_turn[turn])
     # for item in pos_word_list:
